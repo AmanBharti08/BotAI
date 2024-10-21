@@ -5,6 +5,7 @@ import { FaRegEdit } from "react-icons/fa";
 import { PiThumbsUp } from "react-icons/pi";
 import { PiThumbsDown } from "react-icons/pi";
 import { RxCross1 } from "react-icons/rx";
+import { RxHamburgerMenu } from "react-icons/rx";
 
 import userLogo from "../assets/userlogo.svg";
 
@@ -38,7 +39,9 @@ const Main = () => {
   // ---------------------------------
   const [ratingSelect, setRatingSelect] = useState("rating");
   const [FilteredCHat, setFilteredChat] = useState([]);
+  const [selectedMessageId, setSelectedMessageId] = useState(null);
   //------------------------------------------------
+  const [openSideBar, setOpenSideBar] = useState(false);
   useEffect(() => {
     const storedChats = localStorage.getItem("pastChats");
     if (storedChats) {
@@ -65,6 +68,26 @@ const Main = () => {
       setFilteredChat(filtered);
     }
   }, [ratingSelect, pastChats]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 768) {
+        // Adjust this value based on your breakpoint for medium screens
+        setOpenSideBar(true); // Automatically open the sidebar on medium and larger screens
+      } else {
+        setOpenSideBar(false); // Optionally, close the sidebar on small screens
+      }
+    };
+
+    // Initial check
+    handleResize();
+
+    // Add event listener
+    window.addEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
   //------------------------HANDLE ASK----------------------
   const handleAsk = () => {
     if (inputText) {
@@ -117,6 +140,7 @@ const Main = () => {
     const time = new Date().toLocaleTimeString();
 
     const quesNdResp = {
+      id: Date.now(),
       question: question,
       AIresponse: aiResponse,
       time: time,
@@ -136,10 +160,10 @@ const Main = () => {
     );
   };
 
-  const submitFeedback = (index) => {
+  const submitFeedback = (id) => {
     setCurrentChat((prevChat) =>
-      prevChat.map((msg, i) =>
-        i === index ? { ...msg, feedback: feedbackvalue } : msg
+      prevChat.map((msg) =>
+        msg.id === id ? { ...msg, feedback: feedbackvalue } : msg
       )
     );
     setFeedbackModal(false);
@@ -149,22 +173,53 @@ const Main = () => {
   const pastChatopen = () => {
     setOpenPastChat(true);
     const chats = JSON.parse(localStorage.getItem("pastChats"));
+    if (window.innerWidth >= 768) {
+      // Adjust this value based on your breakpoint for medium screens
+      setOpenSideBar(true); // Automatically open the sidebar on medium and larger screens
+    } else {
+      setOpenSideBar(false); // Optionally, close the sidebar on small screens
+    }
+
     setPastChats(chats);
   };
-
+  //-------------------------------------------
+  const openSidebar = () => {
+    setOpenSideBar(true);
+  };
+  const closeSideBar = () => {
+    const handleResize = () => {
+      if (window.innerWidth >= 768) {
+        // Adjust this value based on your breakpoint for medium screens
+        setOpenSideBar(true); // Automatically open the sidebar on medium and larger screens
+      } else {
+        setOpenSideBar(false); // Optionally, close the sidebar on small screens
+      }
+    };
+    setOpenSideBar(false);
+    handleResize();
+  };
   return (
     <div className="flex w-full h-full">
       {/* sidebar */}
-      <div className=" bg-[#121212] w-[25%]">
+      <div
+        className={`bg-[#121212] z-30 md:w-[25%] absolute h-full w-[45%] md:relative ${openSideBar ? "" : "hidden"
+          }`}
+      >
         {/* newChatbutton */}
-        <div className="flex gap-8 px-5 py-3 items-center justify-between">
-          <img className="rounded-full" src={logo} alt="" />
-          <h1 className="text-xl">New Chat</h1>
+        <div className="flex md:gap-8  md:px-5 p-3 items-center justify-between md:py-3">
+          <img
+            className="rounded-full w-8 "
+            src={logo}
+            alt=""
+            onClick={closeSideBar}
+          />
+          <h1 className="text-xl ">New Chat</h1>
           <FaRegEdit
             className="cursor-pointer"
             onClick={() => {
               setCurrentChat([]);
               setOpenPastChat(false);
+              closeSideBar();
             }}
           />
         </div>
@@ -179,7 +234,8 @@ const Main = () => {
       {/* main area */}
       <div className="bg-black mx-auto w-full flex flex-col justify-between">
         {/* navbar */}
-        <div className="py-3 px-5 flex items-center  text-4xl">
+        <div className="py-3 px-5 flex items-center  text-3xl gap-2">
+          <RxHamburgerMenu className="md:hidden" onClick={openSidebar} />
           <h1>Bot AI</h1>
         </div>
         {/* chat area */}
@@ -276,19 +332,20 @@ const Main = () => {
                         </div>
                       </div>
                       {/* responsediv */}
-                      <div className="mx-5 mt-1 bg-[#f5f5f5] gap-10 flex items-center rounded-md p-4 text-black">
+                      <div className="text-[#121212] bg-[#f5f5f5] mx-5 flex gap-10 items-center rounded-md p-4">
                         <div className="">
-                          <img src={logo} alt="" className="w-16" />
+                          <img src={logo} alt="" />
                         </div>
-                        <div className="flex flex-col gap-3">
+                        <div className="flex flex-col gap-3 w-full">
                           <div>
-                            <h1 className="font-bold">Soul AI</h1>
+                            <h1 className="font-bold text-lg ">Soul AI</h1>
                             <p>{message.AIresponse}</p>
                           </div>
-                          <div className="flex gap-5 items-center">
+                          <div className="flex flex-col md:flex-row md:gap-5 gap-2 w-full">
                             <div>{message.time}</div>
-                            <div className="flex gap-3 items-center">
+                            <div className="flex  items-center gap-2">
                               {/* buttons */}
+
                               <PiThumbsUp
                                 className="cursor-pointer hover:text-green-600"
                                 onClick={() => handleRating(index)}
@@ -303,11 +360,22 @@ const Main = () => {
                               )}
                               <PiThumbsDown
                                 className="cursor-pointer hover:text-red-600"
-                                onClick={() => setFeedbackModal(true)}
+                                onClick={() => {
+                                  setFeedbackModal(true);
+                                  setSelectedMessageId(message.id); // store the id of the message to give feedback
+                                }}
                               />
-                              {message.feedback && <h1>{message.feedback}</h1>}
+
+
+                              {message.feedback && (
+                                <h1 className="font-bold">
+                                  {message.feedback}
+                                </h1>
+                              )}
+
+
                               {feedbackModal && (
-                                <div className="w-[500px] h-[300px] absolute rounded-md top-[50%] left-[50%] bg-slate-100 -translate-x-[50%] -translate-y-[50%]">
+                                <div className="md:w-[500px] md:h-[300px] w-[320px] p-2 absolute rounded-md top-[50%] left-[50%] bg-slate-100 -translate-x-[50%] -translate-y-[50%]">
                                   <div className="m-5 flex items-center justify-between">
                                     <h1 className="font-bold text-xl">
                                       Provide Feedback
@@ -336,7 +404,9 @@ const Main = () => {
                                   <div className="flex items-center justify-end mx-5">
                                     <button
                                       className="bg-red-600 text-white px-2 py-1 rounded-md"
-                                      onClick={() => submitFeedback(index)}
+                                      onClick={() =>
+                                        submitFeedback(selectedMessageId)
+                                      }
                                     >
                                       Submit
                                     </button>
@@ -355,13 +425,13 @@ const Main = () => {
               <div className="flex flex-col gap-4 justify-between items-center">
                 <h1 className="text-2xl">How Can I Help You Today?</h1>
                 <img src={logo} alt="" className="w-20 rounded-full" />
-                <div className="text-black gap-8 grid grid-cols-2 grid-rows-2 ">
+                <div className="text-black md:gap-8 md:grid md:grid-cols-2 md:grid-rows-2 flex flex-col gap-4">
                   {/* cards */}
                   {homeCardQuestion.map((question, index) => {
                     return (
                       <div
                         key={index}
-                        className="bg-[#f5f5f5] basis-1/2 p-5 cursor-pointer rounded-md"
+                        className="bg-[#f5f5f5] basis-1/2 p-5 cursor-pointer roundd-md"
                         onClick={() => cardClicked(question.question)}
                       >
                         <h1 className="font-bold">{question.question}</h1>
@@ -373,10 +443,10 @@ const Main = () => {
               </div>
             )}
             {/* input and button */}
-            <div className="px-5 py-3 flex justify-between items-center gap-4">
+            <div className="md:px-5 md:py-3 flex justify-between items-center md:gap-4 px-1 py-1 gap-2">
               <input
                 type="text"
-                className="basis-5/6 p-2 rounded-md text-black"
+                className="basis-5/6 md:p-2 p-1 rounded-md text-black"
                 placeholder="Search"
                 value={inputText}
                 onChange={(e) => {
@@ -384,13 +454,13 @@ const Main = () => {
                 }}
               />
               <button
-                className="bg-[#121212] flex items-center rounded-md justify-center px-10 py-2"
+                className="bg-[#121212] flex items-center rounded-md justify-center md:px-10 md:py-2 px-4 py-1"
                 onClick={handleAsk}
               >
                 Ask
               </button>
               <button
-                className="bg-[#121212] flex items-center rounded-md justify-center px-10 py-2"
+                className="bg-[#121212] flex items-center rounded-md justify-center md:px-10 md:py-2 px-4 py-1"
                 onClick={handleSave}
               >
                 Save
