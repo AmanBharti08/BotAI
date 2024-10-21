@@ -6,7 +6,7 @@ import { PiThumbsUp } from "react-icons/pi";
 import { PiThumbsDown } from "react-icons/pi";
 import { RxCross1 } from "react-icons/rx";
 
-import userLogo from "../assets/userLogo.svg";
+import userLogo from "../assets/userlogo.svg";
 
 import { useState, useEffect } from "react";
 import ReactStars from "react-rating-stars-component";
